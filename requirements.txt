@@ -9,7 +9,6 @@ urllib3==1.22
 
 click==6.7
 configparser==3.5.0
-certbuilder
 crlbuilder
 csrbuilder
 oscrypto==0.19.1
