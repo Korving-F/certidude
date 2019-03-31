@@ -55,7 +55,7 @@ def generate_csr(cn=None):
     return pem_armor_csr(request)
 
 
-def clean_client():
+def clean_client:
     assert os.getuid() == 0 and os.getgid() == 0
     files = [
         "/etc/certidude/client.conf",
@@ -142,7 +142,7 @@ def clean_server():
     # Restore initial resolv.conf
     shutil.copyfile("/etc/resolv.conf.orig", "/etc/resolv.conf")
 
-def test_cli_setup_authority():
+def test_cli_setup_authority(client):
     assert os.getuid() == 0, "Run tests as root in a clean VM or container"
     assert check_output(["/bin/hostname", "-f"]) == b"ca.example.lan\n", "As a safety precaution, unittests only run in a machine whose hostanme -f  is ca.example.lan"
 
@@ -165,7 +165,7 @@ def test_cli_setup_authority():
         shutil.copyfile("/etc/resolv.conf", "/etc/resolv.conf.orig")
 
     clean_server()
-    clean_client()
+    clean_client
 
     with open("/etc/hosts", "w") as fh:
         fh.write("127.0.0.1 localhost\n")
@@ -291,7 +291,7 @@ def test_cli_setup_authority():
     assert r.headers.get('content-type') == "application/x-x509-ca-cert"
     assert r.text == buf
 
-    r = client().simulate_get("/api/certificate")
+    r = client.simulate_get("/api/certificate")
     assert r.status_code == 200
     assert r.headers.get('content-type') == "application/x-x509-ca-cert"
     assert r.text == buf
@@ -330,22 +330,22 @@ def test_cli_setup_authority():
     r = requests.get("http://ca.example.lan/../nonexistant.html")
     assert r.status_code == 400, r.text
 
-    r = client().simulate_get("/")
+    r = client.simulate_get("/")
     assert r.status_code == 200, r.text
-    r = client().simulate_get("/index.html")
+    r = client.simulate_get("/index.html")
     assert r.status_code == 200, r.text
-    r = client().simulate_get("/nonexistant.html")
+    r = client.simulate_get("/nonexistant.html")
     assert r.status_code == 404, r.text
-    r = client().simulate_get("/../nonexistant.html")
+    r = client.simulate_get("/../nonexistant.html")
     assert r.status_code == 400, r.text
 
     # Test request submission
     buf = generate_csr(cn="test")
 
-    r = client().simulate_post("/api/request/", body=buf)
+    r = client.simulate_post("/api/request/", body=buf)
     assert r.status_code == 415 # wrong content type
 
-    r = client().simulate_post("/api/request/",
+    r = client.simulate_post("/api/request/",
         body=buf,
         headers={"content-type":"application/pkcs10"})
     assert r.status_code == 202 # success
@@ -353,60 +353,60 @@ def test_cli_setup_authority():
     assert os.path.exists("/var/lib/certidude/ca.example.lan/requests/test.pem")
 
     # Test request deletion
-    r = client().simulate_delete("/api/request/test/")
+    r = client.simulate_delete("/api/request/test/")
     assert r.status_code == 401, r.text
-    r = client().simulate_delete("/api/request/test/",
+    r = client.simulate_delete("/api/request/test/",
         headers={"Authorization":usertoken})
     assert r.status_code == 403, r.text
-    r = client().simulate_delete("/api/request/test/",
+    r = client.simulate_delete("/api/request/test/",
         headers={"User-Agent":UA_FEDORA_FIREFOX, "Authorization":admintoken})
     assert r.status_code == 403, r.text # CSRF prevented
     assert os.path.exists("/var/lib/certidude/ca.example.lan/requests/test.pem")
-    r = client().simulate_delete("/api/request/test/",
+    r = client.simulate_delete("/api/request/test/",
         headers={"Authorization":admintoken})
     assert r.status_code == 200, r.text
-    r = client().simulate_delete("/api/request/nonexistant/",
+    r = client.simulate_delete("/api/request/nonexistant/",
         headers={"Authorization":admintoken})
     assert r.status_code == 404, r.text
 
     # Test request submission corner cases
-    r = client().simulate_post("/api/request/",
+    r = client.simulate_post("/api/request/",
         body=buf,
         headers={"content-type":"application/pkcs10"})
     assert r.status_code == 202 # success
     assert "Stored request " in inbox.pop(), inbox
 
-    r = client().simulate_post("/api/request/",
+    r = client.simulate_post("/api/request/",
         body=buf,
         headers={"content-type":"application/pkcs10"})
     assert r.status_code == 202 # already exists, same keypair so it's ok
     assert not inbox
 
-    r = client().simulate_post("/api/request/",
+    r = client.simulate_post("/api/request/",
         query_string="wait=true",
         body=buf,
         headers={"content-type":"application/pkcs10"})
     assert r.status_code == 303 # redirect to long poll
     assert not inbox
 
-    r = client().simulate_post("/api/request/",
+    r = client.simulate_post("/api/request/",
         body=generate_csr(cn="test"),
         headers={"content-type":"application/pkcs10"})
     assert r.status_code == 409 # duplicate cn, different keypair
     assert not inbox
 
-    r = client().simulate_get("/api/request/test/", headers={"Accept":"application/json"})
+    r = client.simulate_get("/api/request/test/", headers={"Accept":"application/json"})
     assert r.status_code == 200 # fetch as JSON ok
     assert r.headers.get('content-type') == "application/json"
 
-    r = client().simulate_get("/api/request/test/", headers={"Accept":"application/x-pem-file"})
+    r = client.simulate_get("/api/request/test/", headers={"Accept":"application/x-pem-file"})
     assert r.status_code == 200 # fetch as PEM ok
     assert r.headers.get('content-type') == "application/x-pem-file"
 
-    r = client().simulate_get("/api/request/test/", headers={"Accept":"text/plain"})
+    r = client.simulate_get("/api/request/test/", headers={"Accept":"text/plain"})
     assert r.status_code == 415 # not available as plaintext
 
-    r = client().simulate_get("/api/request/nonexistant/", headers={"Accept":"application/json"})
+    r = client.simulate_get("/api/request/nonexistant/", headers={"Accept":"application/json"})
     assert r.status_code == 404 # nonexistant common names
 
     # TODO: submit messed up CSR-s: no CN, empty CN etc
@@ -416,19 +416,19 @@ def test_cli_setup_authority():
     assert not result.exception, result.output
 
     # Test sign API call
-    r = client().simulate_post("/api/request/test/")
+    r = client.simulate_post("/api/request/test/")
     assert r.status_code == 401, r.text
-    r = client().simulate_post("/api/request/test/",
+    r = client.simulate_post("/api/request/test/",
         headers={"Authorization":usertoken})
     assert r.status_code == 403, r.text
-    r = client().simulate_post("/api/request/test/",
+    r = client.simulate_post("/api/request/test/",
         headers={"Authorization":admintoken})
     assert r.status_code == 201, r.text
     assert "Signed " in inbox.pop(), inbox
 
     # Test autosign
     buf = generate_csr(cn="test2")
-    r = client().simulate_post("/api/request/",
+    r = client.simulate_post("/api/request/",
         query_string="autosign=1",
         body=buf,
         headers={"content-type":"application/pkcs10"})
@@ -437,7 +437,7 @@ def test_cli_setup_authority():
     assert "Signed " in inbox.pop(), inbox
     assert not inbox
 
-    r = client().simulate_post("/api/request/",
+    r = client.simulate_post("/api/request/",
         query_string="autosign=1",
         body=buf,
         headers={"content-type":"application/pkcs10"})
@@ -445,7 +445,7 @@ def test_cli_setup_authority():
     assert not inbox
 
     buf = generate_csr(cn="test2")
-    r = client().simulate_post("/api/request/",
+    r = client.simulate_post("/api/request/",
         query_string="autosign=1",
         body=buf,
         headers={"content-type":"application/pkcs10"})
@@ -454,7 +454,7 @@ def test_cli_setup_authority():
     assert not inbox
 
     buf = generate_csr(cn="test2.example.lan")
-    r = client().simulate_post("/api/request/",
+    r = client.simulate_post("/api/request/",
         query_string="autosign=1",
         body=buf,
         headers={"content-type":"application/pkcs10"})
@@ -463,105 +463,105 @@ def test_cli_setup_authority():
     assert not inbox
 
     # Test signed certificate API call
-    r = client().simulate_get("/api/signed/nonexistant/")
+    r = client.simulate_get("/api/signed/nonexistant/")
     assert r.status_code == 404, r.text
 
-    r = client().simulate_get("/api/signed/test/")
+    r = client.simulate_get("/api/signed/test/")
     assert r.status_code == 200, r.text
     assert r.headers.get('content-type') == "application/x-pem-file"
 
-    r = client().simulate_get("/api/signed/test/", headers={"Accept":"application/json"})
+    r = client.simulate_get("/api/signed/test/", headers={"Accept":"application/json"})
     assert r.status_code == 200, r.text
     assert r.headers.get('content-type') == "application/json"
 
-    r = client().simulate_get("/api/signed/test/", headers={"Accept":"text/plain"})
+    r = client.simulate_get("/api/signed/test/", headers={"Accept":"text/plain"})
     assert r.status_code == 415, r.text
 
     # Test revocations API call
-    r = client().simulate_get("/api/revoked/",
+    r = client.simulate_get("/api/revoked/",
         headers={"Accept":"application/x-pem-file"})
     assert r.status_code == 200, r.text
     assert r.headers.get('content-type') == "application/x-pem-file"
 
-    r = client().simulate_get("/api/revoked/")
+    r = client.simulate_get("/api/revoked/")
     assert r.status_code == 200, r.text
     assert r.headers.get('content-type') == "application/x-pkcs7-crl"
 
-    r = client().simulate_get("/api/revoked/",
+    r = client.simulate_get("/api/revoked/",
         headers={"Accept":"text/plain"})
     assert r.status_code == 415, r.text
 
-    r = client().simulate_get("/api/revoked/",
+    r = client.simulate_get("/api/revoked/",
         query_string="wait=true",
         headers={"Accept":"application/x-pem-file"})
     assert r.status_code == 303, r.text
 
     # Test attribute fetching API call
-    r = client().simulate_get("/api/signed/test/attr/")
+    r = client.simulate_get("/api/signed/test/attr/")
     assert r.status_code == 401, r.text
-    r = client().simulate_get("/api/signed/test/attr/", headers={"Authorization":usertoken})
+    r = client.simulate_get("/api/signed/test/attr/", headers={"Authorization":usertoken})
     assert r.status_code == 403, r.text
-    r = client().simulate_get("/api/signed/test/attr/", headers={"Authorization":admintoken})
+    r = client.simulate_get("/api/signed/test/attr/", headers={"Authorization":admintoken})
     assert r.status_code == 200, r.text
-    r = client().simulate_get("/api/signed/nonexistant/attr/", headers={"Authorization":admintoken})
+    r = client.simulate_get("/api/signed/nonexistant/attr/", headers={"Authorization":admintoken})
     assert r.status_code == 404, r.text
 
     # Tags should not be visible anonymously
-    r = client().simulate_get("/api/signed/test/tag/")
+    r = client.simulate_get("/api/signed/test/tag/")
     assert r.status_code == 401, r.text
-    r = client().simulate_get("/api/signed/test/tag/", headers={"Authorization":usertoken})
+    r = client.simulate_get("/api/signed/test/tag/", headers={"Authorization":usertoken})
     assert r.status_code == 403, r.text
-    r = client().simulate_get("/api/signed/test/tag/", headers={"Authorization":admintoken})
+    r = client.simulate_get("/api/signed/test/tag/", headers={"Authorization":admintoken})
     assert r.status_code == 200, r.text
 
     # Tags can be added only by admin
-    r = client().simulate_post("/api/signed/test/tag/")
+    r = client.simulate_post("/api/signed/test/tag/")
     assert r.status_code == 401, r.text
-    r = client().simulate_post("/api/signed/test/tag/",
+    r = client.simulate_post("/api/signed/test/tag/",
         headers={"Authorization":usertoken})
     assert r.status_code == 403, r.text
-    r = client().simulate_post("/api/signed/test/tag/",
+    r = client.simulate_post("/api/signed/test/tag/",
         body="key=other&value=something",
         headers={"content-type": "application/x-www-form-urlencoded", "Authorization":admintoken})
     assert r.status_code == 200, r.text
-    r = client().simulate_post("/api/signed/test/tag/",
+    r = client.simulate_post("/api/signed/test/tag/",
         body="key=location&value=Tallinn",
         headers={"content-type": "application/x-www-form-urlencoded", "Authorization":admintoken})
     assert r.status_code == 200, r.text
 
     # Tags can be overwritten only by admin
-    r = client().simulate_put("/api/signed/test/tag/something/")
+    r = client.simulate_put("/api/signed/test/tag/something/")
     assert r.status_code == 401, r.text
-    r = client().simulate_put("/api/signed/test/tag/something/",
+    r = client.simulate_put("/api/signed/test/tag/something/",
         headers={"Authorization":usertoken})
     assert r.status_code == 403, r.text
-    r = client().simulate_put("/api/signed/test/tag/something/",
+    r = client.simulate_put("/api/signed/test/tag/something/",
         body="value=else",
         headers={"content-type": "application/x-www-form-urlencoded", "Authorization":admintoken})
     assert r.status_code == 200, r.text
-    r = client().simulate_put("/api/signed/test/tag/location=Tallinn/",
+    r = client.simulate_put("/api/signed/test/tag/location=Tallinn/",
         body="value=Tartu",
         headers={"content-type": "application/x-www-form-urlencoded", "Authorization":admintoken})
     assert r.status_code == 200, r.text
-    r = client().simulate_get("/api/signed/test/tag/", headers={"Authorization":admintoken})
+    r = client.simulate_get("/api/signed/test/tag/", headers={"Authorization":admintoken})
     assert r.status_code == 200, r.text
     # TODO: assert set(json.loads(r.text)) == set([{"key": "location", "id": "location=Tartu", "value": "Tartu"}, {"key": "other", "id": "else", "value": "else"}]), r.text
 
 
     # Test scripting
-    r = client().simulate_get("/api/signed/test/script/")
+    r = client.simulate_get("/api/signed/test/script/")
     assert r.status_code == 403, r.text # script not authorized
-    r = client().simulate_get("/api/signed/nonexistant/script/")
+    r = client.simulate_get("/api/signed/nonexistant/script/")
     assert r.status_code == 404, r.text # cert not found
 
     # Insert lease
-    r = client().simulate_get("/api/signed/test/lease/", headers={"Authorization":admintoken})
+    r = client.simulate_get("/api/signed/test/lease/", headers={"Authorization":admintoken})
     assert r.status_code == 404, r.text
-    r = client().simulate_post("/api/lease/",
+    r = client.simulate_post("/api/lease/",
         query_string = "client=test&inner_address=127.0.0.1&outer_address=8.8.8.8")
     assert r.status_code == 403, r.text # lease update forbidden without cert
 
-    r = client().simulate_post("/api/lease/",
+    r = client.simulate_post("/api/lease/",
         query_string = "client=test&inner_address=127.0.0.1&outer_address=8.8.8.8",
         headers={"X-SSL-CERT":open("/var/lib/certidude/ca.example.lan/signed/ca.example.lan.pem").read() })
     assert r.status_code == 200, r.text # lease update ok
@@ -570,7 +570,7 @@ def test_cli_setup_authority():
     from xattr import listxattr, getxattr
     assert not [j for j in listxattr("/var/lib/certidude/ca.example.lan/signed/test.pem") if j.startswith(b"user.machine.")]
     #os.system("curl http://ca.example.lan/api/signed/test/script | bash")
-    r = client().simulate_post("/api/signed/test/attr", body="cpu=i5&mem=512M&dist=Ubunt",
+    r = client.simulate_post("/api/signed/test/attr", body="cpu=i5&mem=512M&dist=Ubunt",
         headers={"content-type": "application/x-www-form-urlencoded"})
     assert r.status_code == 200, r.text
     assert getxattr("/var/lib/certidude/ca.example.lan/signed/test.pem", "user.machine.cpu") == b"i5"
@@ -578,103 +578,103 @@ def test_cli_setup_authority():
     assert getxattr("/var/lib/certidude/ca.example.lan/signed/test.pem", "user.machine.dist") == b"Ubunt"
 
     # Test tagging integration in scripting framework
-    r = client().simulate_get("/api/signed/test/script/")
+    r = client.simulate_get("/api/signed/test/script/")
     assert r.status_code == 200, r.text # script render ok
     assert "curl http://ca.example.lan/api/signed/test/attr " in r.text, r.text
     assert "Tartu" in r.text, r.text
 
-    r = client().simulate_post("/api/signed/test/tag/",
+    r = client.simulate_post("/api/signed/test/tag/",
         body="key=script&value=openwrt.sh",
         headers={"content-type": "application/x-www-form-urlencoded", "Authorization":admintoken})
     assert r.status_code == 200, r.text
 
-    r = client().simulate_get("/api/signed/test/script/")
+    r = client.simulate_get("/api/signed/test/script/")
     assert r.status_code == 200, r.text # script render ok
     assert "uci set " in r.text, r.text
 
     # Test lease retrieval
-    r = client().simulate_get("/api/signed/test/lease/")
+    r = client.simulate_get("/api/signed/test/lease/")
     assert r.status_code == 401, r.text
-    r = client().simulate_get("/api/signed/test/lease/", headers={"Authorization":usertoken})
+    r = client.simulate_get("/api/signed/test/lease/", headers={"Authorization":usertoken})
     assert r.status_code == 403, r.text
-    r = client().simulate_get("/api/signed/test/lease/", headers={"Authorization":admintoken})
+    r = client.simulate_get("/api/signed/test/lease/", headers={"Authorization":admintoken})
     assert r.status_code == 200, r.text
     assert r.headers.get('content-type') == "application/json; charset=UTF-8"
 
     # Tags can be deleted only by admin
-    r = client().simulate_delete("/api/signed/test/tag/else/")
+    r = client.simulate_delete("/api/signed/test/tag/else/")
     assert r.status_code == 401, r.text
-    r = client().simulate_delete("/api/signed/test/tag/else/",
+    r = client.simulate_delete("/api/signed/test/tag/else/",
         headers={"Authorization":usertoken})
     assert r.status_code == 403, r.text
-    r = client().simulate_delete("/api/signed/test/tag/else/",
+    r = client.simulate_delete("/api/signed/test/tag/else/",
         headers={"content-type": "application/x-www-form-urlencoded", "Authorization":admintoken})
     assert r.status_code == 200, r.text
-    r = client().simulate_delete("/api/signed/test/tag/location=Tartu/",
+    r = client.simulate_delete("/api/signed/test/tag/location=Tartu/",
         headers={"content-type": "application/x-www-form-urlencoded", "Authorization":admintoken})
     assert r.status_code == 200, r.text
-    r = client().simulate_delete("/api/signed/test/tag/script=openwrt.sh/",
+    r = client.simulate_delete("/api/signed/test/tag/script=openwrt.sh/",
         headers={"content-type": "application/x-www-form-urlencoded", "Authorization":admintoken})
     assert r.status_code == 200, r.text
-    r = client().simulate_get("/api/signed/test/tag/", headers={"Authorization":admintoken})
+    r = client.simulate_get("/api/signed/test/tag/", headers={"Authorization":admintoken})
     assert r.status_code == 200, r.text
     assert r.text == "[]", r.text
 
     # Test script without tags
-    r = client().simulate_get("/api/signed/test/script/")
+    r = client.simulate_get("/api/signed/test/script/")
     assert r.status_code == 200, r.text # script render ok
     assert "# No tags" in r.text, r.text
 
     # Test lease update
-    r = client().simulate_post("/api/lease/",
+    r = client.simulate_post("/api/lease/",
         query_string = "client=test&inner_address=127.0.0.1&outer_address=8.8.8.8&serial=0",
         headers={"X-SSL-CERT":open("/var/lib/certidude/ca.example.lan/signed/ca.example.lan.pem").read() })
     assert r.status_code == 403, r.text # invalid serial number supplied
-    r = client().simulate_post("/api/lease/",
+    r = client.simulate_post("/api/lease/",
         query_string = "client=test&inner_address=1.2.3.4&outer_address=8.8.8.8",
         headers={"X-SSL-CERT":open("/var/lib/certidude/ca.example.lan/signed/ca.example.lan.pem").read() })
     assert r.status_code == 200, r.text # lease update ok
 
 
     # Test revocation
-    r = client().simulate_delete("/api/signed/test/")
+    r = client.simulate_delete("/api/signed/test/")
     assert r.status_code == 401, r.text
-    r = client().simulate_delete("/api/signed/test/",
+    r = client.simulate_delete("/api/signed/test/",
         headers={"Authorization":usertoken})
     assert r.status_code == 403, r.text
-    r = client().simulate_delete("/api/signed/test/",
+    r = client.simulate_delete("/api/signed/test/",
         headers={"Authorization":admintoken})
     assert r.status_code == 200, r.text
     assert "Revoked " in inbox.pop(), inbox
 
 
     # Log can be read only by admin
-    r = client().simulate_get("/api/log/")
+    r = client.simulate_get("/api/log/")
     assert r.status_code == 401, r.text
-    r = client().simulate_get("/api/log/",
+    r = client.simulate_get("/api/log/",
         headers={"Authorization":usertoken})
     assert r.status_code == 403, r.text
-    r = client().simulate_get("/api/log/",
+    r = client.simulate_get("/api/log/",
         headers={"Authorization":admintoken})
     assert r.status_code == 200, r.text
     assert r.headers.get('content-type') == "application/json; charset=UTF-8"
 
 
     # Test session API call
-    r = client().simulate_get("/api/")
+    r = client.simulate_get("/api/")
     assert r.status_code == 401
     assert "Please authenticate" in r.text
 
-    r = client().simulate_get("/api/", headers={"Accept":"text/plain", "Authorization":admintoken})
+    r = client.simulate_get("/api/", headers={"Accept":"text/plain", "Authorization":admintoken})
     assert r.status_code == 415 # invalid media type
 
-    r = client().simulate_get("/api/", headers={"Authorization":usertoken})
+    r = client.simulate_get("/api/", headers={"Authorization":usertoken})
     assert r.status_code == 200
     assert r.headers.get('content-type').startswith("application/json")
     assert r.json, r.text
     assert not r.json.get("authority"), r.text # No permissions to admin
 
-    r = client().simulate_get("/api/", headers={"Authorization":admintoken})
+    r = client.simulate_get("/api/", headers={"Authorization":admintoken})
     assert r.status_code == 200
     assert r.headers.get('content-type').startswith("application/json")
     assert "/ev/sub/" in r.text, r.text
@@ -701,7 +701,7 @@ def test_cli_setup_authority():
     # In this case nginx is set up as web server with TLS certificates
     # generated by certidude.
 
-    clean_client()
+    clean_client
 
     result = runner.invoke(cli, ["setup", "nginx", "-cn", "www", "ca.example.lan"])
     assert result.exception # FQDN required
@@ -750,7 +750,7 @@ def test_cli_setup_authority():
 
     # First OpenVPN server is set up
 
-    clean_client()
+    clean_client
     assert not os.path.exists("/var/lib/certidude/ca.example.lan/server_cert.pem")
 
     if not os.path.exists("/etc/openvpn/keys"):
@@ -817,7 +817,7 @@ def test_cli_setup_authority():
     # TODO: Check that tunnel interfaces came up, perhaps try to ping?
     # TODO: assert key, req, cert paths were included correctly in OpenVPN config
 
-    clean_client()
+    clean_client
 
     result = runner.invoke(cli, ['setup', 'openvpn', 'networkmanager', "-cn", "roadwarrior3", "ca.example.lan", "vpn.example.lan"])
     assert not result.exception, result.output
@@ -974,7 +974,7 @@ def test_cli_setup_authority():
 
     # Setup gateway
 
-    clean_client()
+    clean_client
     assert not os.path.exists("/var/lib/certidude/ca.example.lan/signed/ipsec.example.lan.pem")
 
     result = runner.invoke(cli, ['setup', 'strongswan', 'server', "-cn", "ipsec", "ca.example.lan"])
@@ -1039,7 +1039,7 @@ def test_cli_setup_authority():
 
     # IPSec using NetworkManager
 
-    clean_client()
+    clean_client
 
     result = runner.invoke(cli, ['setup', 'strongswan', 'networkmanager', "-cn", "roadwarrior4", "ca.example.lan", "ipsec.example.lan"])
     assert not result.exception, result.output
@@ -1077,13 +1077,13 @@ def test_cli_setup_authority():
     ### Test that legacy features are disabled by default ###
     #########################################################
 
-    r = client().simulate_get("/api/scep/")
+    r = client.simulate_get("/api/scep/")
     assert r.status_code == 404
-    r = client().simulate_get("/api/ocsp/")
+    r = client.simulate_get("/api/ocsp/")
     assert r.status_code == 404
-    r = client().simulate_post("/api/scep/")
+    r = client.simulate_post("/api/scep/")
     assert r.status_code == 404
-    r = client().simulate_post("/api/ocsp/")
+    r = client.simulate_post("/api/ocsp/")
     assert r.status_code == 404
 
 
@@ -1227,7 +1227,7 @@ def test_cli_setup_authority():
 
     mach_pid = os.fork() # Otherwise results in Terminated, needs investigation why
     if not mach_pid:
-        clean_client()
+        clean_client
 
         # Test non-matching CN
         result = runner.invoke(cli, ['setup', 'openvpn', 'client', "-cn", "somethingelse", "ca.example.lan", "vpn.example.lan"])
@@ -1240,7 +1240,7 @@ def test_cli_setup_authority():
         assert result.exception, result.output # Bad request 400
 
         # With matching CN it should work
-        clean_client()
+        clean_client
 
         result = runner.invoke(cli, ['setup', 'openvpn', 'client', "-cn", "ca", "ca.example.lan", "vpn.example.lan"])
         assert not result.exception, result.output
