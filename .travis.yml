@@ -3,8 +3,8 @@ language: generic
 dist: trusty
 env:
   - COVERAGE_FILE=/tmp/.coverage
-  - export LC_ALL=C.UTF-8
-  - export LANG=C.UTF-8
+  - LC_ALL=C.UTF-8
+  - LANG=C.UTF-8
 
 after_success:
   - codecov
