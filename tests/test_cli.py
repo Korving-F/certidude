@@ -55,7 +55,7 @@ def generate_csr(cn=None):
     return pem_armor_csr(request)
 
 
-def clean_client:
+def clean_client():
     assert os.getuid() == 0 and os.getgid() == 0
     files = [
         "/etc/certidude/client.conf",
