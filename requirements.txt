@@ -1,12 +1,21 @@
-click>=6.7
-configparser>=3.5.0
+MarkupSafe==1.0 
+asn1crypto==0.24.0 
+certbuilder==0.14.2
+certifi==2017.11.5
+chardet==3.0.4
+idna==2.6 
+ply==3.10
+urllib3==1.22
+
+click==6.7
+configparser==3.5.0
 certbuilder
 crlbuilder
 csrbuilder
-oscrypto
-requests
+oscrypto==0.19.1
+requests==2.18.4
 jinja2
-ipsecparse
+ipsecparse==0.1.0
 
 pykerberos==1.2.1
 attrs==17.4.0
