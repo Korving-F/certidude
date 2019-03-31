@@ -11,6 +11,7 @@ script:
   - sudo mkdir -p /etc/systemd/system # Until Travis is stuck with 14.04
   - sudo easy_install3 pip==9.0.1
   - sudo pip3 install -r requirements.txt
+  - sudo pip3 install falcon
   - sudo pip3 install -e .
   - echo ca | sudo tee /etc/hostname
   - echo 127.0.0.1 localhost | sudo tee /etc/hosts
